@@ -86,8 +86,7 @@ def summarize_text(
 
     if question:
         instruction = (
-            f'include any information that can be used to answer the question "{question}". '
-            "Do not directly answer the question itself"
+            f'include any information that can be used to answer the question "{question}".'
         )
 
     summarization_prompt = ChatSequence.for_model(model)
@@ -103,12 +102,11 @@ def summarize_text(
         # summarization_prompt.add("user", text)
         summarization_prompt.add(
             "user",
-            "Write a concise summary of the following text"
             f"{f'; {instruction}' if instruction is not None else ''}:"
             "\n\n\n"
             f'LITERAL TEXT: """{text}"""'
             "\n\n\n"
-            "CONCISE SUMMARY: The text is best summarized as"
+            "The best response is:"
             # "Only respond with a concise summary or description of the user message."
         )
 
@@ -131,12 +129,22 @@ def summarize_text(
         logger.info(
             f"Summarizing chunk {i + 1} / {len(chunks)} of length {chunk_length} tokens"
         )
-        summary, _ = summarize_text(chunk, instruction)
+        summary, _ = summarize_text(chunk, config, instruction)
         summaries.append(summary)
 
     logger.info(f"Summarized {len(chunks)} chunks")
 
-    summary, _ = summarize_text("\n\n".join(summaries))
+    # VT_EDIT
+    _summaries_to_consider = []
+    for summary in summaries:
+        if summary != 'false':
+            _summaries_to_consider.append(summary)
+    if len(_summaries_to_consider) == 0:
+        return 'false', [
+            (summaries[i], chunks[i][0]) for i in range(0, len(chunks))
+        ]
+
+    summary, _ = summarize_text("\n\n".join(_summaries_to_consider), config, instruction)
 
     return summary.strip(), [
         (summaries[i], chunks[i][0]) for i in range(0, len(chunks))

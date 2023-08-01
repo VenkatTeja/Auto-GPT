@@ -53,7 +53,7 @@ class MemoryItem:
         ]
         logger.debug("Chunks: " + str(chunks))
 
-        chunk_summaries = [
+        _chunk_summaries = [
             summary
             for summary, _ in [
                 summarize_text(
@@ -65,19 +65,28 @@ class MemoryItem:
                 for text_chunk in chunks
             ]
         ]
-        logger.debug("Chunk summaries: " + str(chunk_summaries))
+        logger.debug("Chunk summaries: " + str(_chunk_summaries))
+
+        # VT_EDIT
+        chunk_summaries = []
+        for summary in _chunk_summaries:
+            if summary != 'false':
+                chunk_summaries.append(summary)
 
         e_chunks = get_embedding(chunks, config)
 
-        summary = (
-            chunk_summaries[0]
-            if len(chunks) == 1
-            else summarize_text(
-                "\n\n".join(chunk_summaries),
-                instruction=how_to_summarize,
-                question=question_for_summary,
-            )[0]
-        )
+        summary = 'false'
+        if len(chunk_summaries) > 0:
+            summary = (
+                chunk_summaries[0]
+                if len(chunks) == 1
+                else summarize_text(
+                    "\n\n".join(chunk_summaries),
+                    config,
+                    instruction=how_to_summarize,
+                    question=question_for_summary,
+                )[0]
+            )
         logger.debug("Total summary: " + summary)
 
         # TODO: investigate search performance of weighted average vs summary
